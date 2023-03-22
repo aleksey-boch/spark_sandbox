@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:12
+    container_name: postgres_db_meetup
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./sql:/sql/
+    env_file:
+      - ./.env
+    ports:
+      - 5434:5432
+
+  meetup_producer:
+    build: .
+    container_name: flask_api
+    command: bash -c "python meetup_producer.py"
+    ports:
+      - 8001:8000
+    depends_on:
+      - db
+
+  spark:
+    restart: always
+    build: .
+    image: apache/spark-py:v3.3.2
+    container_name: spark_local
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - APPLICATION_PORT=8080
+      - PATH_TO_LOG=logs
+      - LOG_NAME=spark_local
+
+
+
+volumes:
+  postgres_data:
